@@ -25,13 +25,19 @@ jobs:
     - name: Install Cordova CLI
       run: npm install -g cordova
 
-    - name: Add Android Platform & Build
+    - name: Prepare Project and Build APK
       run: |
+        cordova create temp_app com.studiclock.app StudiClock
+        cp -r www/* temp_app/www/
+        cp config.xml temp_app/config.xml
+        cd temp_app
         cordova platform add android
         cordova build android --debug
+        mkdir -p ../output
+        cp platforms/android/app/build/outputs/apk/debug/app-debug.apk ../output/StudiClock.apk
 
     - name: Upload APK
       uses: actions/upload-artifact@v3
       with:
-        name: StudiClock-RealLock-APK
-        path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        name: StudiClock-APK
+        path: output/StudiClock.apk
