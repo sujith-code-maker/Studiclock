@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>StudiClock</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="nav">
+      <h1 id="logo">Studic<span style="color: #003eb9">lock</span></h1>
+      <div id="profile">S</div>
+    </div>
+
+    <div class="wrap">
+      <div id="clocklayout">
+        <div id="cltext">
+          Apps are <span style="display: block">unlocked in</span>
+          <span id="timerDisplay" style="font-size: 36px; font-weight: 800; display: block; margin-top: 5px;">
+            12 hours
+          </span>
+        </div>
+        <button id="clbtn">set new timer lock</button>
+      </div>
+    </div>
+
+    <div id="lock">
+      <div id="locktitle"><h1>Locked Apps</h1></div>
+      <div id="lockedAppGrid" class="app-grid">
+        </div>
+    </div>
+
+    <div id="timerstate">
+      <div class="wrap">
+        <div id="timer">
+          <h4>Select Time Duration</h4>
+          <select id="durationSelect">
+            <option value="3">3 hrs</option>
+            <option value="6">6 hrs</option>
+            <option value="12" selected>12 hrs</option>
+            <option value="24">24 hrs</option>
+          </select>
+
+          <h4>Select Apps to Lock</h4>
+          <div id="appslayout">
+            <label><input type="checkbox" value="com.instagram.android" checked> Instagram</label>
+            <label><input type="checkbox" value="com.google.android.youtube" checked> YouTube</label>
+            <label><input type="checkbox" value="com.facebook.katana" checked> Facebook</label>
+          </div>
+
+          <div id="btns">
+            <button id="set">Set Timer</button>
+            <button id="close">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="cordova.js"></script>
+    <script src="js/index.js"></script>
+  </body>
+</html>
