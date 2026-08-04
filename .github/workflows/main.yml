@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -18,142 +19,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Native APK
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Cordova & Build APK
         run: |
-          mkdir -p project/app/src/main/java/com/studiclock/app
-          mkdir -p project/app/src/main/res/values
-          mkdir -p project/app/src/main/res/xml
-
-          # Root build.gradle
-          cat << 'EOF' > project/build.gradle
-          buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
-          }
-          allprojects {
-              repositories { google(); mavenCentral() }
-          }
-          EOF
-
-          # settings.gradle
-          cat << 'EOF' > project/settings.gradle
-          include ':app'
-          EOF
-
-          # App build.gradle
-          cat << 'EOF' > project/app/build.gradle
-          plugins { id 'com.android.application' }
-          android {
-              namespace 'com.studiclock.app'
-              compileSdk 33
-              defaultConfig {
-                  applicationId "com.studiclock.app"
-                  minSdk 21
-                  targetSdk 33
-                  versionCode 1
-                  versionName "1.0"
-              }
-          }
-          EOF
-
-          # AndroidManifest.xml with Accessibility Lock Service
-          cat << 'EOF' > project/app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <application
-                  android:label="StudiClock"
-                  android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
-                  <activity android:name=".MainActivity" android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-                  <service
-                      android:name=".WellnessService"
-                      android:label="StudiClock Lock Service"
-                      android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.accessibilityservice.AccessibilityService" />
-                      </intent-filter>
-                      <meta-data
-                          android:name="android.accessibilityservice"
-                          android:resource="@xml/accessibility_config" />
-                  </service>
-              </application>
-          </manifest>
-          EOF
-
-          # Accessibility XML Config
-          cat << 'EOF' > project/app/src/main/res/xml/accessibility_config.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-              android:accessibilityEventTypes="typeWindowStateChanged"
-              android:accessibilityFeedbackType="feedbackGeneric"
-              android:accessibilityFlags="flagDefault"
-              android:canRetrieveWindowContent="false"
-              android:notificationTimeout="100" />
-          EOF
-
-          # MainActivity.java
-          cat << 'EOF' > project/app/src/main/java/com/studiclock/app/MainActivity.java
-          package com.studiclock.app;
-          import android.os.Bundle;
-          import android.app.Activity;
-          import android.widget.TextView;
-          import android.view.Gravity;
-
-          public class MainActivity extends Activity {
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  TextView tv = new TextView(this);
-                  tv.setText("StudiClock Active!\nEnable Accessibility in Phone Settings.");
-                  tv.setTextSize(20);
-                  tv.setGravity(Gravity.CENTER);
-                  setContentView(tv);
-              }
-          }
-          EOF
-
-          # WellnessService.java (Real Lock Engine)
-          cat << 'EOF' > project/app/src/main/java/com/studiclock/app/WellnessService.java
-          package com.studiclock.app;
-          import android.accessibilityservice.AccessibilityService;
-          import android.view.accessibility.AccessibilityEvent;
-          import android.content.Intent;
-
-          public class WellnessService extends AccessibilityService {
-              @Override
-              public void onAccessibilityEvent(AccessibilityEvent event) {
-                  if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                      CharSequence pkgName = event.getPackageName();
-                      if (pkgName != null) {
-                          String app = pkgName.toString();
-                          if (app.contains("instagram") || app.contains("youtube") || app.contains("facebook")) {
-                              Intent startMain = new Intent(Intent.ACTION_MAIN);
-                              startMain.addCategory(Intent.CATEGORY_HOME);
-                              startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                              startActivity(startMain);
-                          }
-                      }
-                  }
-              }
-              @Override
-              public void onInterrupt() {}
-          }
-          EOF
-
-          # Build APK
-          cd project
-          chmod +x ../gradlew 2>/dev/null || true
-          gradle assembleDebug
+          npm install -g cordova
+          cordova create studiclock_app com.studiclock.app StudiClock
+          cd studiclock_app
+          cordova platform add android@12.0.0
+          cordova build android --debug
           mkdir -p ../output
-          cp app/build/outputs/apk/debug/app-debug.apk ../output/StudiClock.apk
+          cp platforms/android/app/build/outputs/apk/debug/app-debug.apk ../output/StudiClock.apk
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: StudiClock-RealLock-APK
+          name: StudiClock-APK
           path: output/StudiClock.apk
