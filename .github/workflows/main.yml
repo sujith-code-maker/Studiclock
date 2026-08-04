@@ -24,20 +24,27 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Build Cordova APK with Gradle Override
+      - name: Install Cordova and Build APK
         run: |
-          mkdir -p /tmp/cordova_workspace
-          cd /tmp/cordova_workspace
-          npm install -g cordova
+          # 1. Install Cordova
+          npm install -g cordova@12.0.0
+
+          # 2. Create isolated project
+          mkdir -p /tmp/build_dir
+          cd /tmp/build_dir
           cordova create studiclock com.studiclock.app StudiClock
           cd studiclock
-          
-          # Add latest android platform compatible with Java 17
+
+          # 3. Add Android Platform
           cordova platform add android@12.0.0
+
+          # 4. Fix Gradle Version Conflict (Use Gradle 8.4 Wrapper)
+          sed -i 's/gradle-.*-all.zip/gradle-8.4-bin.zip/g' platforms/android/cordova/lib/builders/ProjectBuilder.js 2>/dev/null || true
           
-          # Pass Gradle build configuration flag
-          CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL="https\://services.gradle.org/distributions/gradle-7.6-all.zip" cordova build android --debug
-          
+          # 5. Build Debug APK
+          cordova build android --debug -- --gradleVersion=8.4
+
+          # 6. Copy APK to Output
           mkdir -p $GITHUB_WORKSPACE/output
           cp platforms/android/app/build/outputs/apk/debug/app-debug.apk $GITHUB_WORKSPACE/output/StudiClock.apk
 
