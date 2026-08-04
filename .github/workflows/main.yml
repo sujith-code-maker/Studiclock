@@ -19,27 +19,27 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Native Android App
+      - name: Create Android Native Code
         run: |
-          mkdir -p native_app/app/src/main/java/com/studiclock/app
-          mkdir -p native_app/app/src/main/res/xml
+          mkdir -p app/src/main/java/com/studiclock/app
+          mkdir -p app/src/main/res/xml
 
-          # Settings
-          echo "include ':app'" > native_app/settings.gradle
+          # settings.gradle
+          echo "include ':app'" > settings.gradle
 
-          # Root Build Gradle
-          cat << 'EOF' > native_app/build.gradle
+          # Root build.gradle (Android Gradle Plugin 8.0.2)
+          cat << 'EOF' > build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.1.1' }
+              dependencies { classpath 'com.android.tools.build:gradle:8.0.2' }
           }
           allprojects {
               repositories { google(); mavenCentral() }
           }
           EOF
 
-          # App Build Gradle
-          cat << 'EOF' > native_app/app/build.gradle
+          # App build.gradle
+          cat << 'EOF' > app/build.gradle
           plugins { id 'com.android.application' }
           android {
               namespace 'com.studiclock.app'
@@ -54,8 +54,8 @@ jobs:
           }
           EOF
 
-          # Android Manifest
-          cat << 'EOF' > native_app/app/src/main/AndroidManifest.xml
+          # AndroidManifest.xml
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <application
@@ -84,7 +84,7 @@ jobs:
           EOF
 
           # Accessibility Config
-          cat << 'EOF' > native_app/app/src/main/res/xml/accessibility_config.xml
+          cat << 'EOF' > app/src/main/res/xml/accessibility_config.xml
           <?xml version="1.0" encoding="utf-8"?>
           <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
               android:accessibilityEventTypes="typeWindowStateChanged"
@@ -94,8 +94,8 @@ jobs:
               android:notificationTimeout="100" />
           EOF
 
-          # MainActivity Java
-          cat << 'EOF' > native_app/app/src/main/java/com/studiclock/app/MainActivity.java
+          # MainActivity.java
+          cat << 'EOF' > app/src/main/java/com/studiclock/app/MainActivity.java
           package com.studiclock.app;
           import android.os.Bundle;
           import android.app.Activity;
@@ -107,7 +107,7 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   TextView tv = new TextView(this);
-                  tv.setText("StudiClock Active!\n\nGo to Phone Settings -> Accessibility -> Turn ON 'StudiClock Lock Service'");
+                  tv.setText("StudiClock Active!\n\nEnable 'StudiClock Lock Service' in Accessibility Settings.");
                   tv.setTextSize(18);
                   tv.setGravity(Gravity.CENTER);
                   setContentView(tv);
@@ -115,8 +115,8 @@ jobs:
           }
           EOF
 
-          # Lock Service Java Engine
-          cat << 'EOF' > native_app/app/src/main/java/com/studiclock/app/WellnessService.java
+          # Lock Engine Service
+          cat << 'EOF' > app/src/main/java/com/studiclock/app/WellnessService.java
           package com.studiclock.app;
           import android.accessibilityservice.AccessibilityService;
           import android.view.accessibility.AccessibilityEvent;
@@ -143,16 +143,14 @@ jobs:
           }
           EOF
 
-          # Setup Gradle Wrapper
-          cd native_app
-          gradle wrapper --gradle-version 8.1.1
-          ./gradlew assembleDebug
-
-          mkdir -p $GITHUB_WORKSPACE/output
-          cp app/build/outputs/apk/debug/app-debug.apk $GITHUB_WORKSPACE/output/StudiClock.apk
+      # Uses Gradle 8.0 Action automatically (No local CLI bugs)
+      - name: Setup & Build with Gradle
+        uses: gradle/gradle-build-action@v3
+        with:
+          arguments: assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: StudiClock-RealLocker-APK
-          path: output/StudiClock.apk
+          name: StudiClock-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
